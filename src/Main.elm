@@ -452,28 +452,30 @@ createTests model =
     div []
         (List.append
             (List.indexedMap (\index test -> createTest model index test) model.tests)
-            [ span [ onClick AddTest ] [ text "+" ] ]
+            [ div [ class "add-test", onClick AddTest ] [ text "+" ] ]
         )
 
 
 createTest : Model -> Int -> ( List String, List String ) -> Html Msg
 createTest model testIndex test =
     div [ class "test-case" ]
-        [ div [ class "test-inputs" ]
-            (List.indexedMap
-                (\nodeIndex input -> createTestInput model testIndex Input nodeIndex input)
-                (Tuple.first test)
-            )
-        , div [ class "test-inputs" ] [ text "↓" ]
-        , div [ class "test-inputs" ]
-            (List.indexedMap
-                (\nodeIndex input -> createTestInput model testIndex Output nodeIndex input)
-                (Tuple.second test)
-            )
-        , div
-            []
-            [ div [] [ text (toString (Net.forwardPass model.net (testToFloat (Tuple.first test)))) ]
-            , div [ onClick (RemoveTest testIndex) ] [ text "-" ]
+        [ div [ class "remove-test", onClick (RemoveTest testIndex) ] [ text "-" ]
+        , div [ class "test-info" ]
+            [ div [ class "test-inputs" ]
+                (List.indexedMap
+                    (\nodeIndex input -> createTestInput model testIndex Input nodeIndex input)
+                    (Tuple.first test)
+                )
+            , div [ class "test-inputs" ] [ text "↓" ]
+            , div [ class "test-inputs" ]
+                (List.indexedMap
+                    (\nodeIndex ( input, result ) -> createTestInputForOutput model testIndex Output nodeIndex input result)
+                    (List.map2
+                        (,)
+                        (Tuple.second test)
+                        (Net.forwardPass model.net (testToFloat (Tuple.first test)))
+                    )
+                )
             ]
         ]
 
@@ -481,3 +483,11 @@ createTest model testIndex test =
 createTestInput : Model -> Int -> NodeType -> Int -> String -> Html Msg
 createTestInput model testIndex nodeType nodeIndex val =
     input [ class "test-input", onInput (ChangeTest testIndex nodeType nodeIndex), value val ] []
+
+
+createTestInputForOutput : Model -> Int -> NodeType -> Int -> String -> Float -> Html Msg
+createTestInputForOutput model testIndex nodeType nodeIndex val resultVal =
+    div [ class "output-combo" ]
+        [ createTestInput model testIndex nodeType nodeIndex val
+        , div [] [ text (String.left 3 (toString (toFloat (round (resultVal * 10)) / 10))) ]
+        ]

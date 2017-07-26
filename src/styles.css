@@ -59,6 +59,10 @@ html, body{
 }
 .test-case{
 	border-bottom: black solid 1px;
+	display: flex;
+}
+.test-info{
+	flex: 1 0 auto;
 }
 .test-inputs{
 	display: flex;
@@ -70,4 +74,16 @@ html, body{
 	display: inline-block;
 	width: 16px;
 	text-align: center;
+}
+.remove-test{
+	display: flex;
+	align-items: center;
+}
+.add-test{
+	display: flex;
+	justify-content: center;
+}
+.output-combo div{
+	display: flex;
+	justify-content: center;
 }
