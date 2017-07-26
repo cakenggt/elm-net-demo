@@ -1,0 +1,73 @@
+html, body{
+	margin: 0;
+	height: 100%;
+}
+#main{
+	height: 100%;
+}
+.container{
+	display: flex;
+	flex-direction: row-reverse;
+	height: 100%;
+	position: relative;
+}
+.control-panel{
+	flex: 0 0 auto;
+	width: 200px;
+	height: 100%;
+	overflow-y: auto;
+	box-shadow: -1px 0 3px 0 black;
+}
+.display{
+	flex: 1 0 auto;
+	height: 100%;
+}
+.display svg{
+	height: 100%;
+	margin: 0 auto;
+	display: block;
+}
+.net-dimens{
+	display: flex;
+	justify-content: space-around;
+	border-bottom: black solid 1px;
+}
+.net-dimens .dimen{
+	display: inline-block;
+	flex: 0 0 auto;
+}
+.net-dimens .dimen .pill{
+	border-radius: 3px;
+	border: 1px black solid;
+}
+.net-dimens .dimen .pill .control{
+	text-align: center;
+	background-color: gray;
+	cursor: pointer;
+	user-select: none;
+}
+.net-dimens .dimen .pill .panel{
+	text-align: center;
+	box-shadow: 0 0 1px 1px black inset;
+}
+.big-button{
+	background-color: red;
+	padding: 10px;
+	text-align: center;
+	cursor: pointer;
+	user-select: none;
+}
+.test-case{
+	border-bottom: black solid 1px;
+}
+.test-inputs{
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+}
+.test-input{
+	flex: 0 0 auto;
+	display: inline-block;
+	width: 16px;
+	text-align: center;
+}

@@ -5,16 +5,16 @@
 module Main exposing (..)
 
 import Html exposing (..)
-import Html.Events exposing (..)
 import Html.Attributes exposing (..)
-import Net
-import Json.Decode exposing (decodeString, list, float)
-import NetSvg exposing (display)
+import Html.Events exposing (..)
+import Http exposing (decodeUri, encodeUri)
+import Json.Decode exposing (decodeString, float, list)
 import Maybe exposing (..)
 import Navigation
-import UrlParser as Url exposing ((</>), (<?>), s, int, stringParam, top, string)
-import Http exposing (encodeUri, decodeUri)
+import Src.Net
+import Src.NetSvg exposing (display)
 import Time exposing (Time, millisecond)
+import UrlParser as Url exposing ((</>), (<?>), int, s, string, stringParam, top)
 
 
 main : Program Never Model Msg
@@ -47,7 +47,7 @@ routeFunc =
 
 
 type alias Model =
-    { net : Net.Net
+    { net : Src.Net.Net
     , tests : List ( List String, List String )
     , inputs : Int
     , hiddens : Int
@@ -77,7 +77,9 @@ init location =
         outputSize =
             getSizeOfNestedList params.targets
     in
-        ( Model (Net.createNetDeterministic inputSize inputSize outputSize) tests inputSize inputSize outputSize 1000 False, Cmd.none )
+    ( Model (Src.Net.createNetDeterministic inputSize inputSize outputSize 624334567345) tests inputSize inputSize outputSize 1000 False
+    , Src.Net.createNetRandom inputSize inputSize outputSize NewNet
+    )
 
 
 routeParser : Maybe Route -> ParamsMap
@@ -86,14 +88,14 @@ routeParser route =
         defaultParams =
             { inputs = "[[\"0\",\"0\"],[\"1\",\"0\"],[\"0\",\"1\"],[\"1\",\"1\"]]", targets = "[[\"0\"],[\"1\"],[\"1\"],[\"0\"]]" }
     in
-        case route of
-            Just params ->
-                case params of
-                    Params str maybeInputs maybeTargets ->
-                        { inputs = (maybeUri defaultParams.inputs maybeInputs), targets = (maybeUri defaultParams.targets maybeTargets) }
+    case route of
+        Just params ->
+            case params of
+                Params str maybeInputs maybeTargets ->
+                    { inputs = maybeUri defaultParams.inputs maybeInputs, targets = maybeUri defaultParams.targets maybeTargets }
 
-            Nothing ->
-                defaultParams
+        Nothing ->
+            defaultParams
 
 
 maybeUri : String -> Maybe String -> String
@@ -112,7 +114,7 @@ maybeUri default maybe =
 
 type Msg
     = Randomize
-    | NewNet Net.Net
+    | NewNet Src.Net.Net
     | Backprop
     | TimedBackprop Time
     | NewBackprop String
@@ -139,7 +141,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Randomize ->
-            ( model, Net.createNetRandom model.inputs model.hiddens model.outputs NewNet )
+            ( model, Src.Net.createNetRandom model.inputs model.hiddens model.outputs NewNet )
 
         NewNet newNet ->
             ( { model | net = newNet }, Cmd.none )
@@ -149,28 +151,28 @@ update msg model =
                 tests =
                     testsToFloats model.tests
             in
-                ( { model | net = Net.backpropagateSet model.net 0.1 tests model.backpropIter }
-                , Cmd.none
-                )
+            ( { model | net = Src.Net.backpropagateSet model.net 0.1 tests model.backpropIter }
+            , Cmd.none
+            )
 
         TimedBackprop time ->
             let
                 tests =
                     testsToFloats model.tests
             in
-                if model.running then
-                    ( { model | net = Net.backpropagateSet model.net 1 tests 1 }
-                    , Cmd.none
-                    )
-                else
-                    ( model, Cmd.none )
+            if model.running then
+                ( { model | net = Src.Net.backpropagateSet model.net 1 tests 1 }
+                , Cmd.none
+                )
+            else
+                ( model, Cmd.none )
 
         NewBackprop str ->
             let
                 iter =
                     Result.withDefault 0 (String.toInt str)
             in
-                ( { model | backpropIter = iter }, Cmd.none )
+            ( { model | backpropIter = iter }, Cmd.none )
 
         UrlChange _ ->
             ( model, Cmd.none )
@@ -180,7 +182,7 @@ update msg model =
                 | inputs = model.inputs + 1
                 , tests = List.map (\( input, output ) -> ( List.append input [ "0" ], output )) model.tests
               }
-            , Net.createNetRandom (model.inputs + 1) model.hiddens model.outputs NewNet
+            , Src.Net.createNetRandom (model.inputs + 1) model.hiddens model.outputs NewNet
             )
 
         DecInput ->
@@ -200,18 +202,18 @@ update msg model =
                     else
                         List.map (\( input, output ) -> ( pop input, output )) model.tests
             in
-                ( { model
-                    | inputs = finalNum
-                    , tests = tests
-                  }
-                , Net.createNetRandom finalNum model.hiddens model.outputs NewNet
-                )
+            ( { model
+                | inputs = finalNum
+                , tests = tests
+              }
+            , Src.Net.createNetRandom finalNum model.hiddens model.outputs NewNet
+            )
 
         IncHidden ->
             ( { model
                 | hiddens = model.hiddens + 1
               }
-            , Net.createNetRandom model.inputs (model.hiddens + 1) model.outputs NewNet
+            , Src.Net.createNetRandom model.inputs (model.hiddens + 1) model.outputs NewNet
             )
 
         DecHidden ->
@@ -225,18 +227,18 @@ update msg model =
                     else
                         newNum
             in
-                ( { model
-                    | hiddens = finalNum
-                  }
-                , Net.createNetRandom model.inputs finalNum model.outputs NewNet
-                )
+            ( { model
+                | hiddens = finalNum
+              }
+            , Src.Net.createNetRandom model.inputs finalNum model.outputs NewNet
+            )
 
         IncOutput ->
             ( { model
                 | outputs = model.outputs + 1
                 , tests = List.map (\( input, output ) -> ( input, List.append output [ "0" ] )) model.tests
               }
-            , Net.createNetRandom model.inputs model.hiddens (model.outputs + 1) NewNet
+            , Src.Net.createNetRandom model.inputs model.hiddens (model.outputs + 1) NewNet
             )
 
         DecOutput ->
@@ -256,12 +258,12 @@ update msg model =
                     else
                         List.map (\( input, output ) -> ( input, pop output )) model.tests
             in
-                ( { model
-                    | outputs = finalNum
-                    , tests = tests
-                  }
-                , Net.createNetRandom model.inputs model.hiddens finalNum NewNet
-                )
+            ( { model
+                | outputs = finalNum
+                , tests = tests
+              }
+            , Src.Net.createNetRandom model.inputs model.hiddens finalNum NewNet
+            )
 
         ChangeTest testIndex nodeType nodeIndex str ->
             let
@@ -301,7 +303,7 @@ update msg model =
                         )
                         model.tests
             in
-                ( { model | tests = tests }, Cmd.none )
+            ( { model | tests = tests }, Cmd.none )
 
         ToggleRunning ->
             ( { model | running = not model.running }, Cmd.none )
@@ -331,7 +333,7 @@ update msg model =
 
 pop : List a -> List a
 pop ls =
-    List.take ((List.length ls) - 1) ls
+    List.take (List.length ls - 1) ls
 
 
 stringToList : String -> List (List String)
@@ -366,12 +368,12 @@ getSizeOfNestedList str =
         total =
             stringToList str
     in
-        case List.head total of
-            Just ls ->
-                List.length ls
+    case List.head total of
+        Just ls ->
+            List.length ls
 
-            Nothing ->
-                0
+        Nothing ->
+            0
 
 
 
@@ -389,13 +391,23 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ button [ onClick Randomize ] [ text "Randomize" ]
-        , createNetDimensions model
-        , button [ onClick Backprop ] [ text "Backprop" ]
-        , input [ onInput NewBackprop, value (toString model.backpropIter) ] []
+    div
+        [ class "container"
+        ]
+        [ controlPanel model
+        , netDisplayPanel model
+        ]
+
+
+controlPanel : Model -> Html Msg
+controlPanel model =
+    div
+        [ class "control-panel"
+        ]
+        [ div [ class "big-button", onClick Randomize ] [ text "Randomize" ]
+        , netDimensions model
         , createTests model
-        , div [ onClick ToggleRunning ]
+        , div [ class "big-button", onClick ToggleRunning ]
             [ text
                 (if model.running then
                     "Pause"
@@ -403,25 +415,47 @@ view model =
                     "Start"
                 )
             ]
-        , display model.net
         ]
 
 
-createNetDimensions : Model -> Html Msg
-createNetDimensions model =
-    div []
-        [ (createNetDimension model.inputs IncInput DecInput)
-        , (createNetDimension model.hiddens IncHidden DecHidden)
-        , (createNetDimension model.outputs IncOutput DecOutput)
+netDisplayPanel : Model -> Html Msg
+netDisplayPanel model =
+    div [ class "display" ]
+        [ display model.net ]
+
+
+netDimensions : Model -> Html Msg
+netDimensions model =
+    div
+        [ class "net-dimens" ]
+        [ netDimension "Inputs" model.inputs IncInput DecInput
+        , netDimension "Hiddens" model.hiddens IncHidden DecHidden
+        , netDimension "Outputs" model.outputs IncOutput DecOutput
         ]
 
 
-createNetDimension : Int -> Msg -> Msg -> Html Msg
-createNetDimension current incMsg decMsg =
-    div []
-        [ div [ onClick incMsg ] [ text "inc" ]
-        , div [] [ text (toString current) ]
-        , div [ onClick decMsg ] [ text "dec" ]
+netDimension : String -> Int -> Msg -> Msg -> Html Msg
+netDimension label current incMsg decMsg =
+    div
+        [ class "dimen" ]
+        [ div [] [ text label ]
+        , div
+            [ class "pill" ]
+            [ div
+                [ onClick incMsg
+                , class "control"
+                ]
+                [ text "+" ]
+            , div
+                [ class "panel"
+                ]
+                [ text (toString current) ]
+            , div
+                [ onClick decMsg
+                , class "control"
+                ]
+                [ text "-" ]
+            ]
         ]
 
 
@@ -436,16 +470,26 @@ createTests model =
 
 createTest : Model -> Int -> ( List String, List String ) -> Html Msg
 createTest model testIndex test =
-    div []
-        (List.concat
-            [ (List.indexedMap (\nodeIndex input -> createTestInput model testIndex Input nodeIndex input) (Tuple.first test))
-            , (List.indexedMap (\nodeIndex input -> createTestInput model testIndex Output nodeIndex input) (Tuple.second test))
-            , [ text (toString (Net.forwardPass model.net (testToFloat (Tuple.first test)))) ]
-            , [ span [ onClick (RemoveTest testIndex) ] [ text "-" ] ]
+    div [ class "test-case" ]
+        [ div [ class "test-inputs" ]
+            (List.indexedMap
+                (\nodeIndex input -> createTestInput model testIndex Input nodeIndex input)
+                (Tuple.first test)
+            )
+        , div [ class "test-inputs" ] [ text "↓" ]
+        , div [ class "test-inputs" ]
+            (List.indexedMap
+                (\nodeIndex input -> createTestInput model testIndex Output nodeIndex input)
+                (Tuple.second test)
+            )
+        , div
+            []
+            [ div [] [ text (toString (Src.Net.forwardPass model.net (testToFloat (Tuple.first test)))) ]
+            , div [ onClick (RemoveTest testIndex) ] [ text "-" ]
             ]
-        )
+        ]
 
 
 createTestInput : Model -> Int -> NodeType -> Int -> String -> Html Msg
 createTestInput model testIndex nodeType nodeIndex val =
-    input [ onInput (ChangeTest testIndex nodeType nodeIndex), value val ] []
+    input [ class "test-input", onInput (ChangeTest testIndex nodeType nodeIndex), value val ] []
