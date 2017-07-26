@@ -115,7 +115,6 @@ maybeUri default maybe =
 type Msg
     = Randomize
     | NewNet Src.Net.Net
-    | Backprop
     | TimedBackprop Time
     | NewBackprop String
     | UrlChange Navigation.Location
@@ -146,19 +145,10 @@ update msg model =
         NewNet newNet ->
             ( { model | net = newNet }, Cmd.none )
 
-        Backprop ->
-            let
-                tests =
-                    testsToFloats model.tests
-            in
-            ( { model | net = Src.Net.backpropagateSet model.net 0.1 tests model.backpropIter }
-            , Cmd.none
-            )
-
         TimedBackprop time ->
             let
                 tests =
-                    testsToFloats model.tests
+                    testsToTrainingSets model.tests
             in
             if model.running then
                 ( { model | net = Src.Net.backpropagateSet model.net 1 tests 1 }
@@ -346,13 +336,11 @@ stringToList str =
             [ [] ]
 
 
-testsToFloats : List ( List String, List String ) -> List ( List Float, List Float )
-testsToFloats test =
+testsToTrainingSets : List ( List String, List String ) -> List Src.Net.TrainingSet
+testsToTrainingSets test =
     List.map
         (\( input, output ) ->
-            ( testToFloat input
-            , testToFloat output
-            )
+            Src.Net.TrainingSet (testToFloat input) (testToFloat output)
         )
         test
 
