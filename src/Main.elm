@@ -11,7 +11,7 @@ import Http exposing (decodeUri, encodeUri)
 import Json.Decode exposing (decodeString, float, list)
 import Maybe exposing (..)
 import Navigation
-import Src.Net
+import Net
 import Src.NetSvg exposing (display)
 import Time exposing (Time, millisecond)
 import UrlParser as Url exposing ((</>), (<?>), int, s, string, stringParam, top)
@@ -47,7 +47,7 @@ routeFunc =
 
 
 type alias Model =
-    { net : Src.Net.Net
+    { net : Net.Net
     , tests : List ( List String, List String )
     , inputs : Int
     , hiddens : Int
@@ -77,8 +77,8 @@ init location =
         outputSize =
             getSizeOfNestedList params.targets
     in
-    ( Model (Src.Net.createNetDeterministic inputSize inputSize outputSize 624334567345) tests inputSize inputSize outputSize 1000 False
-    , Src.Net.createNetRandom inputSize inputSize outputSize NewNet
+    ( Model (Net.createNetDeterministic inputSize inputSize outputSize 624334567345) tests inputSize inputSize outputSize 1000 False
+    , Net.createNetRandom inputSize inputSize outputSize NewNet
     )
 
 
@@ -114,7 +114,7 @@ maybeUri default maybe =
 
 type Msg
     = Randomize
-    | NewNet Src.Net.Net
+    | NewNet Net.Net
     | TimedBackprop Time
     | NewBackprop String
     | UrlChange Navigation.Location
@@ -140,7 +140,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Randomize ->
-            ( model, Src.Net.createNetRandom model.inputs model.hiddens model.outputs NewNet )
+            ( model, Net.createNetRandom model.inputs model.hiddens model.outputs NewNet )
 
         NewNet newNet ->
             ( { model | net = newNet }, Cmd.none )
@@ -151,7 +151,7 @@ update msg model =
                     testsToTrainingSets model.tests
             in
             if model.running then
-                ( { model | net = Src.Net.backpropagateSet model.net 1 tests 1 }
+                ( { model | net = Net.backpropagateSet model.net 1 tests 1 }
                 , Cmd.none
                 )
             else
@@ -172,7 +172,7 @@ update msg model =
                 | inputs = model.inputs + 1
                 , tests = List.map (\( input, output ) -> ( List.append input [ "0" ], output )) model.tests
               }
-            , Src.Net.createNetRandom (model.inputs + 1) model.hiddens model.outputs NewNet
+            , Net.createNetRandom (model.inputs + 1) model.hiddens model.outputs NewNet
             )
 
         DecInput ->
@@ -196,14 +196,14 @@ update msg model =
                 | inputs = finalNum
                 , tests = tests
               }
-            , Src.Net.createNetRandom finalNum model.hiddens model.outputs NewNet
+            , Net.createNetRandom finalNum model.hiddens model.outputs NewNet
             )
 
         IncHidden ->
             ( { model
                 | hiddens = model.hiddens + 1
               }
-            , Src.Net.createNetRandom model.inputs (model.hiddens + 1) model.outputs NewNet
+            , Net.createNetRandom model.inputs (model.hiddens + 1) model.outputs NewNet
             )
 
         DecHidden ->
@@ -220,7 +220,7 @@ update msg model =
             ( { model
                 | hiddens = finalNum
               }
-            , Src.Net.createNetRandom model.inputs finalNum model.outputs NewNet
+            , Net.createNetRandom model.inputs finalNum model.outputs NewNet
             )
 
         IncOutput ->
@@ -228,7 +228,7 @@ update msg model =
                 | outputs = model.outputs + 1
                 , tests = List.map (\( input, output ) -> ( input, List.append output [ "0" ] )) model.tests
               }
-            , Src.Net.createNetRandom model.inputs model.hiddens (model.outputs + 1) NewNet
+            , Net.createNetRandom model.inputs model.hiddens (model.outputs + 1) NewNet
             )
 
         DecOutput ->
@@ -252,7 +252,7 @@ update msg model =
                 | outputs = finalNum
                 , tests = tests
               }
-            , Src.Net.createNetRandom model.inputs model.hiddens finalNum NewNet
+            , Net.createNetRandom model.inputs model.hiddens finalNum NewNet
             )
 
         ChangeTest testIndex nodeType nodeIndex str ->
@@ -336,11 +336,11 @@ stringToList str =
             [ [] ]
 
 
-testsToTrainingSets : List ( List String, List String ) -> List Src.Net.TrainingSet
+testsToTrainingSets : List ( List String, List String ) -> List Net.TrainingSet
 testsToTrainingSets test =
     List.map
         (\( input, output ) ->
-            Src.Net.TrainingSet (testToFloat input) (testToFloat output)
+            Net.TrainingSet (testToFloat input) (testToFloat output)
         )
         test
 
@@ -472,7 +472,7 @@ createTest model testIndex test =
             )
         , div
             []
-            [ div [] [ text (toString (Src.Net.forwardPass model.net (testToFloat (Tuple.first test)))) ]
+            [ div [] [ text (toString (Net.forwardPass model.net (testToFloat (Tuple.first test)))) ]
             , div [ onClick (RemoveTest testIndex) ] [ text "-" ]
             ]
         ]

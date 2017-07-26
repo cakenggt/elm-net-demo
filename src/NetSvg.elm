@@ -1,7 +1,7 @@
 module Src.NetSvg exposing (display)
 
 import Html
-import Src.Net
+import Net
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 
@@ -10,7 +10,7 @@ type alias Coord =
     ( Float, Float )
 
 
-display : Src.Net.Net -> Html.Html msg
+display : Net.Net -> Html.Html msg
 display net =
     let
         size =
@@ -30,7 +30,7 @@ display net =
         )
 
 
-generateNodeCircles : Src.Net.Net -> Int -> Int -> List (Svg a)
+generateNodeCircles : Net.Net -> Int -> Int -> List (Svg a)
 generateNodeCircles net width height =
     let
         nodeWidth =
@@ -42,7 +42,7 @@ generateNodeCircles net width height =
     List.map circleGenerator (generateNodePositions net width height)
 
 
-getNodeWidth : Src.Net.Net -> Int -> Float
+getNodeWidth : Net.Net -> Int -> Float
 getNodeWidth net width =
     let
         maxNodes =
@@ -51,7 +51,7 @@ getNodeWidth net width =
     toFloat width / (toFloat maxNodes * 2 + 1)
 
 
-generateNodePositions : Src.Net.Net -> Int -> Int -> List Coord
+generateNodePositions : Net.Net -> Int -> Int -> List Coord
 generateNodePositions net width height =
     let
         nodeWidth =
@@ -112,7 +112,7 @@ generateSingleNodeCircle nodeWidth ( xpos, ypos ) =
     circle [ cx (toString xpos), cy (toString ypos), r radius ] []
 
 
-generateWeightLines : Src.Net.Net -> Int -> Int -> List (Svg a)
+generateWeightLines : Net.Net -> Int -> Int -> List (Svg a)
 generateWeightLines net width height =
     let
         inputWeights =
