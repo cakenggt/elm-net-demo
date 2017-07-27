@@ -8,9 +8,9 @@ Can be viewed here: https://cakenggt.github.io/elm-net-demo/dist/
 Pre-populated training sets can be given by encoding the input and target sets and adding them as params
 
 ```
-var inputs = "[[\"0\",\"0\"],[\"1\",\"0\"],[\"0\",\"1\"],[\"1\",\"1\"]]";
-var targets = "[[\"0\"],[\"1\"],[\"1\"],[\"0\"]]";
+var inputs = [["0","0"],["1","0"],["0","1"],["1","1"]];
+var targets = [["0"],["1"],["1"],["0"]];
 var link = "https://cakenggt.github.io/elm-net-demo/dist?"+"inputs="+encodeURI(JSON.stringify(inputs))+"&targets="+encodeURI(JSON.stringify(targets));
 ```
 
-To produce https://cakenggt.github.io/elm-net-demo/dist?inputs=%22%5B%5B%5C%220%5C%22,%5C%220%5C%22%5D,%5B%5C%221%5C%22,%5C%220%5C%22%5D,%5B%5C%220%5C%22,%5C%221%5C%22%5D,%5B%5C%221%5C%22,%5C%221%5C%22%5D%5D%22&targets=%22%5B%5B%5C%220%5C%22%5D,%5B%5C%221%5C%22%5D,%5B%5C%221%5C%22%5D,%5B%5C%220%5C%22%5D%5D%22
+To produce https://cakenggt.github.io/elm-net-demo/dist?inputs=%5B%5B%220%22,%220%22%5D,%5B%221%22,%220%22%5D,%5B%220%22,%221%22%5D,%5B%221%22,%221%22%5D%5D&targets=%5B%5B%220%22%5D,%5B%221%22%5D,%5B%221%22%5D,%5B%220%22%5D%5D
