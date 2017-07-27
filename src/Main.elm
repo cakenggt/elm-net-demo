@@ -32,13 +32,13 @@ type alias ParamsMap =
 
 
 type Route
-    = Params String (Maybe String) (Maybe String) -- needs the string at the beginning due to elm-reactor
+    = Params String String (Maybe String) (Maybe String) -- needs the string at the beginning due to elm-reactor
 
 
 routeFunc : Url.Parser (Route -> a) a
 routeFunc =
     Url.oneOf
-        [ Url.map Params (string <?> stringParam "inputs" <?> stringParam "targets")
+        [ Url.map Params (string </> string <?> stringParam "inputs" <?> stringParam "targets")
         ]
 
 
@@ -91,7 +91,7 @@ routeParser route =
     case route of
         Just params ->
             case params of
-                Params str maybeInputs maybeTargets ->
+                Params str1 str2 maybeInputs maybeTargets ->
                     { inputs = maybeUri defaultParams.inputs maybeInputs, targets = maybeUri defaultParams.targets maybeTargets }
 
         Nothing ->
