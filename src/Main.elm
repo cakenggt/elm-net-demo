@@ -151,7 +151,7 @@ update msg model =
                     testsToTrainingSets model.tests
             in
             if model.running then
-                ( { model | net = Net.backpropagateSet model.net 1 tests 1 }
+                ( { model | net = Net.backpropagateSet model.net 0.5 tests 1 }
                 , Cmd.none
                 )
             else
